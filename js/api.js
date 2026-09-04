@@ -20,13 +20,25 @@
 
 const GasAPI = (() => {
 
-  const CFG_KEY     = 'dh_gas_url';
-  const TIMEOUT_MS  = 15000;
-  let   _cbCounter  = 0;
+  const CFG_KEY    = 'dh_gas_url';
+  const TIMEOUT_MS = 15000;
+  let   _cbCounter = 0;
+
+  // URL default — langsung aktif bahkan di mode samaran / cache bersih.
+  // Nilai ini dipakai jika localStorage belum pernah diisi.
+  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxPpDKZOHb8W_Cs_hOfa2458P8ej_XDwPmWnMcuxOUd33kBsX7d0UfoKG1h-n8ppPXLDw/exec';
 
   /* ── CONFIG ──────────────────────────────────────────────── */
-  function getUrl()  { return localStorage.getItem(CFG_KEY) || ''; }
-  function setUrl(u) { localStorage.setItem(CFG_KEY, u.trim()); }
+  function getUrl() {
+    // Cek localStorage dulu (bisa di-override dari panel Admin),
+    // fallback ke DEFAULT_URL jika kosong.
+    return localStorage.getItem(CFG_KEY) || DEFAULT_URL;
+  }
+
+  function setUrl(u) {
+    localStorage.setItem(CFG_KEY, u.trim());
+  }
+
   function isConfigured() {
     return getUrl().startsWith('https://script.google.com/macros/');
   }
