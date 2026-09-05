@@ -217,10 +217,11 @@ function handleEditKegiatan(body, cb) {
 }
 
 function handleSimpanHadir(body, cb) {
-  var nama    = body.nama    ? String(body.nama).trim()    : '';
-  var jabatan = body.jabatan ? String(body.jabatan).trim() : '';
-  var ttd     = body.ttd     ? String(body.ttd)            : '';
-  var idKgt   = body.idKegiatan ? String(body.idKegiatan)  : '';
+  var nama       = body.nama       ? String(body.nama).trim()       : '';
+  var jabatan    = body.jabatan    ? String(body.jabatan).trim()    : '';
+  var ttd        = body.ttd        ? String(body.ttd)               : '';
+  var idKgt      = body.idKegiatan ? String(body.idKegiatan)        : '';
+  var keterangan = body.keterangan ? String(body.keterangan).trim() : '';
 
   if (!nama)    return errorResponse('Nama tidak boleh kosong', 400, cb);
   if (!jabatan) return errorResponse('Jabatan harus dipilih', 400, cb);
@@ -233,7 +234,9 @@ function handleSimpanHadir(body, cb) {
   var sh  = getSheet(SHEET_HADIR);
   var id  = 'HDR' + Date.now();
   var now = formatDateTime(new Date());
-  sh.appendRow([id, idKgt, kegiatan.judul, kegiatan.tanggal, nama, jabatan, ttd, now]);
+  // 9 kolom: ID, IDKegiatan, Judul, Tanggal, Nama, Jabatan, TTD, WaktuAbsen, Keterangan
+  sh.appendRow([id, idKgt, kegiatan.judul, kegiatan.tanggal,
+                nama, jabatan, ttd, now, keterangan]);
   SpreadsheetApp.flush();
   return okResponse({ id: id, message: 'Daftar hadir berhasil disimpan' }, cb);
 }
@@ -356,7 +359,8 @@ function getHadirByKegiatan(idKegiatan) {
       nama:            String(data[i][4] || ''),
       jabatan:         String(data[i][5] || ''),
       ttd:             String(data[i][6] || ''),
-      waktuAbsen:      String(data[i][7] || '')
+      waktuAbsen:      String(data[i][7] || ''),
+      keterangan:      String(data[i][8] || '')
     });
   }
   return result;
@@ -522,12 +526,15 @@ function _setupKegiatan(ss) {
 function _setupHadir(ss) {
   var sh = ss.getSheetByName(SHEET_HADIR) || ss.insertSheet(SHEET_HADIR);
   if (sh.getLastRow() > 0) return;
-  var headers = [['ID Hadir','ID Kegiatan','Judul Kegiatan','Tanggal Kegiatan','Nama','Jabatan','Tanda Tangan (Base64)','Waktu Absen']];
-  sh.getRange(1, 1, 1, 8).setValues(headers)
+  // 9 kolom — kolom ke-9 adalah Keterangan (opsional dari peserta)
+  var headers = [['ID Hadir','ID Kegiatan','Judul Kegiatan','Tanggal Kegiatan',
+                  'Nama','Jabatan','Tanda Tangan (Base64)','Waktu Absen','Keterangan']];
+  sh.getRange(1, 1, 1, 9).setValues(headers)
     .setFontWeight('bold').setBackground('#0d652d').setFontColor('#ffffff');
   sh.setFrozenRows(1);
-  for (var c = 1; c <= 8; c++) sh.setColumnWidth(c, 160);
-  sh.setColumnWidth(7, 80); // kolom base64 disempitkan
+  for (var c = 1; c <= 9; c++) sh.setColumnWidth(c, 160);
+  sh.setColumnWidth(7, 80);  // TTD (base64 panjang)
+  sh.setColumnWidth(9, 200); // Keterangan
 }
 
 // ── KONVERSI NILAI WAKTU DARI SPREADSHEET ────────────────────

@@ -144,8 +144,21 @@ function renderKegiatan(kg) {
       ${kg.keterangan ? `<div class="kg-meta-row"><span class="lbl">📝 Ket.</span><span>${esc(kg.keterangan)}</span></div>` : ''}
     </div>`;
 
+  // Blokir form jika status Nonaktif
+  const isAktif  = kg.status === 'Aktif';
+  const banner   = document.getElementById('form-nonaktif-banner');
+  const formEl2  = document.getElementById('hadir-form');
+  const btnSubmit = document.getElementById('btn-submit');
+
   formEl.style.display = 'block';
   listEl.style.display = 'block';
+
+  if (banner) banner.style.display = isAktif ? 'none' : 'flex';
+  if (formEl2) {
+    // Nonaktifkan semua input dan tombol submit jika bukan Aktif
+    Array.from(formEl2.elements).forEach(el => { el.disabled = !isAktif; });
+  }
+  if (btnSubmit) btnSubmit.disabled = !isAktif;
 }
 
 /* ── RENDER DAFTAR HADIR ─────────────────────────────────── */
@@ -181,13 +194,18 @@ function renderDaftarHadir(list) {
 async function onSubmit(e) {
   e.preventDefault();
 
-  const nama    = document.getElementById('input-nama').value.trim();
-  const jabatan = document.getElementById('input-jabatan').value;
-  const ttd     = SignaturePad.getDataURL();
+  const nama       = document.getElementById('input-nama').value.trim();
+  const jabatan    = document.getElementById('input-jabatan').value;
+  const keterangan = document.getElementById('input-keterangan').value.trim();
+  const ttd        = SignaturePad.getDataURL();
 
   if (!ttd) { SignaturePad.setError(); return; }
   if (!currentKegiatan) {
     showToast('Tidak ada kegiatan aktif.', 'error');
+    return;
+  }
+  if (currentKegiatan.status !== 'Aktif') {
+    showToast('Kegiatan sudah Nonaktif — pengisian ditutup.', 'error');
     return;
   }
 
@@ -197,7 +215,7 @@ async function onSubmit(e) {
   try {
     const result = await DB.simpanHadir({
       idKegiatan: currentKegiatan.id,
-      nama, jabatan, ttd
+      nama, jabatan, keterangan, ttd
     });
 
     if (!result.ok) {

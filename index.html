@@ -69,6 +69,17 @@
 
   <!-- KARTU FORMULIR -->
   <section class="card" id="form-card" aria-labelledby="form-heading" style="display:none;">
+    <!-- Banner muncul saat kegiatan Nonaktif -->
+    <div id="form-nonaktif-banner" style="display:none;
+         background:#fce8e6;color:#c62828;padding:12px 18px;
+         font-size:13px;font-weight:600;display:none;align-items:center;gap:8px;
+         border-bottom:1px solid #f4c7c3;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
+                 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      Kegiatan ini sudah <strong>Nonaktif</strong> — pengisian daftar hadir ditutup.
+    </div>
     <div class="card-head green">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0
@@ -125,6 +136,26 @@
               </optgroup>
             </select>
           </div>
+        </div>
+
+        <!-- Keterangan (opsional) -->
+        <div class="form-group">
+          <label class="form-label" for="input-keterangan">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+            Keterangan
+            <span style="font-size:11px;font-weight:400;text-transform:none;
+                         letter-spacing:0;color:var(--clr-muted);margin-left:4px;">
+              (opsional)
+            </span>
+          </label>
+          <input
+            type="text" id="input-keterangan" name="keterangan"
+            class="form-control"
+            placeholder="Contoh: Izin terlambat, mewakili, dll."
+            autocapitalize="sentences"
+          >
         </div>
 
         <!-- Tanda Tangan -->

@@ -160,6 +160,7 @@ const GasAPI = (() => {
   }
 
   async function simpanHadir(data) {
+    // data berisi: { idKegiatan, nama, jabatan, keterangan, ttd }
     return request({ action: 'simpanHadir', ...data });
   }
 

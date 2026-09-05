@@ -248,8 +248,9 @@ const PDFExport = (() => {
     font-size: 10pt;
     font-weight: 700;
   }
-  .hadir-table thead th:nth-child(1) { width: 32px; text-align: center; }
-  .hadir-table thead th:nth-child(4) { width: 120px; text-align: center; }
+  .hadir-table thead th:nth-child(1) { width: 30px; text-align: center; }
+  .hadir-table thead th:nth-child(4) { width: 100px; text-align: center; }
+  .hadir-table thead th:nth-child(5) { width: 110px; }
   .hadir-table tbody td {
     padding: 6px 8px;
     border-bottom: 1px solid #e5e7eb;
@@ -431,6 +432,7 @@ const PDFExport = (() => {
         <th>Nama</th>
         <th>Jabatan</th>
         <th>Tanda Tangan</th>
+        <th>Keterangan</th>
       </tr>
     </thead>
     <tbody>
@@ -445,6 +447,7 @@ const PDFExport = (() => {
             : '<div class="no-ttd">—</div>'
           }
         </td>
+        <td style="font-size:9pt;color:#444;">${escH(h.keterangan || '')}</td>
       </tr>`).join('')}
     </tbody>
   </table>

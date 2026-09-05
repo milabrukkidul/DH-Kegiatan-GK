@@ -255,19 +255,18 @@ const DB = (() => {
     return lLoad(K_HADIR, []).filter(h => h.idKegiatan === idKegiatan);
   }
 
-  async function simpanHadir({ idKegiatan, nama, jabatan, ttd }) {
+  async function simpanHadir({ idKegiatan, nama, jabatan, keterangan, ttd }) {
     if (!nama || !nama.trim()) return { ok: false, msg: 'Nama tidak boleh kosong.' };
     if (!jabatan)               return { ok: false, msg: 'Jabatan harus dipilih.' };
     if (!ttd)                   return { ok: false, msg: 'Tanda tangan wajib diisi.' };
 
     if (isGasMode()) {
-      const res = await GasAPI.simpanHadir({ idKegiatan, nama: nama.trim(), jabatan, ttd });
+      const res = await GasAPI.simpanHadir({ idKegiatan, nama: nama.trim(), jabatan, keterangan: keterangan || '', ttd });
       if (!res.ok) return { ok: false, msg: res.error || 'Gagal menyimpan' };
-      // Update cache lokal
       const all  = lLoad(K_HADIR, []);
       const item = {
         id: res.id || uid(), idKegiatan,
-        nama: nama.trim(), jabatan, ttd,
+        nama: nama.trim(), jabatan, keterangan: keterangan || '', ttd,
         waktuAbsen: nowStr(), ts: Date.now()
       };
       all.push(item);
@@ -288,6 +287,7 @@ const DB = (() => {
       tanggalKegiatan: kg.tanggal,
       nama:            nama.trim(),
       jabatan,
+      keterangan:      keterangan || '',
       ttd,
       waktuAbsen:      nowStr(),
       ts:              Date.now()
