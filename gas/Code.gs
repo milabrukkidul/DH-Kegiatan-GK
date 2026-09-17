@@ -222,6 +222,7 @@ function handleSimpanHadir(body, cb) {
   var ttd        = body.ttd        ? String(body.ttd)               : '';
   var idKgt      = body.idKegiatan ? String(body.idKegiatan)        : '';
   var keterangan = body.keterangan ? String(body.keterangan).trim() : '';
+  var clientId   = body.clientId   ? String(body.clientId).trim()   : '';
 
   if (!nama)    return errorResponse('Nama tidak boleh kosong', 400, cb);
   if (!jabatan) return errorResponse('Jabatan harus dipilih', 400, cb);
@@ -231,12 +232,45 @@ function handleSimpanHadir(body, cb) {
   var kegiatan = getKegiatanById(idKgt);
   if (!kegiatan) return errorResponse('Kegiatan tidak ditemukan', 404, cb);
 
-  var sh  = getSheet(SHEET_HADIR);
+  var sh   = getSheet(SHEET_HADIR);
+  var data = sh.getDataRange().getValues();
+
+  // ── LAPIS 1: Idempotency check (cegah retry JSONP yang masuk dua kali)
+  // Kolom 10 (index 9) menyimpan clientId dari browser.
+  // Jika clientId yang sama sudah ada di sheet, kembalikan ID baris lama
+  // (seolah request pertama berhasil) tanpa tulis duplikat.
+  if (clientId) {
+    for (var c = 1; c < data.length; c++) {
+      if (String(data[c][9] || '') === clientId) {
+        // Request duplikat terdeteksi — kembalikan data yang sudah ada
+        Logger.log('[SimpanHadir] Duplicate clientId ditolak: ' + clientId);
+        return okResponse({
+          id:      String(data[c][0]),
+          message: 'Data sudah tersimpan sebelumnya'
+        }, cb);
+      }
+    }
+  }
+
+  // ── LAPIS 2: Duplikasi nama per kegiatan (satu orang = satu baris)
+  // Cegah kasus user klik "Hadir Lagi" dan submit nama yang sama.
+  var namaLower = nama.toLowerCase();
+  for (var d = 1; d < data.length; d++) {
+    var rowKgt  = String(data[d][1] || '');
+    var rowNama = String(data[d][4] || '').trim().toLowerCase();
+    if (rowKgt === idKgt && rowNama === namaLower) {
+      return errorResponse(
+        'Nama "' + nama + '" sudah tercatat hadir di kegiatan ini.',
+        409, cb
+      );
+    }
+  }
+
   var id  = 'HDR' + Date.now();
   var now = formatDateTime(new Date());
-  // 9 kolom: ID, IDKegiatan, Judul, Tanggal, Nama, Jabatan, TTD, WaktuAbsen, Keterangan
+  // 10 kolom: ID, IDKegiatan, Judul, Tanggal, Nama, Jabatan, TTD, WaktuAbsen, Keterangan, ClientId
   sh.appendRow([id, idKgt, kegiatan.judul, kegiatan.tanggal,
-                nama, jabatan, ttd, now, keterangan]);
+                nama, jabatan, ttd, now, keterangan, clientId]);
   SpreadsheetApp.flush();
   return okResponse({ id: id, message: 'Daftar hadir berhasil disimpan' }, cb);
 }
@@ -361,6 +395,7 @@ function getHadirByKegiatan(idKegiatan) {
       ttd:             String(data[i][6] || ''),
       waktuAbsen:      String(data[i][7] || ''),
       keterangan:      String(data[i][8] || '')
+      // kolom ke-10 (index 9) adalah clientId — hanya dipakai server-side, tidak dikirim ke frontend
     });
   }
   return result;
@@ -526,15 +561,16 @@ function _setupKegiatan(ss) {
 function _setupHadir(ss) {
   var sh = ss.getSheetByName(SHEET_HADIR) || ss.insertSheet(SHEET_HADIR);
   if (sh.getLastRow() > 0) return;
-  // 9 kolom — kolom ke-9 adalah Keterangan (opsional dari peserta)
+  // 10 kolom — kolom ke-10 adalah ClientId untuk idempotency (anti duplikat retry)
   var headers = [['ID Hadir','ID Kegiatan','Judul Kegiatan','Tanggal Kegiatan',
-                  'Nama','Jabatan','Tanda Tangan (Base64)','Waktu Absen','Keterangan']];
-  sh.getRange(1, 1, 1, 9).setValues(headers)
+                  'Nama','Jabatan','Tanda Tangan (Base64)','Waktu Absen','Keterangan','ClientId']];
+  sh.getRange(1, 1, 1, 10).setValues(headers)
     .setFontWeight('bold').setBackground('#0d652d').setFontColor('#ffffff');
   sh.setFrozenRows(1);
-  for (var c = 1; c <= 9; c++) sh.setColumnWidth(c, 160);
-  sh.setColumnWidth(7, 80);  // TTD (base64 panjang)
-  sh.setColumnWidth(9, 200); // Keterangan
+  for (var c = 1; c <= 10; c++) sh.setColumnWidth(c, 160);
+  sh.setColumnWidth(7, 80);   // TTD (base64 panjang)
+  sh.setColumnWidth(9, 200);  // Keterangan
+  sh.setColumnWidth(10, 200); // ClientId
 }
 
 // ── KONVERSI NILAI WAKTU DARI SPREADSHEET ────────────────────

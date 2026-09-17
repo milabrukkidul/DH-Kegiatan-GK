@@ -43,8 +43,21 @@ const GasAPI = (() => {
     return getUrl().startsWith('https://script.google.com/macros/');
   }
 
+  // Operasi tulis yang TIDAK boleh di-retry secara buta (risiko duplikat data)
+  const WRITE_ACTIONS = new Set([
+    'simpanHadir', 'tambahKegiatan', 'hapusKegiatan',
+    'hapusHadir', 'editKegiatan', 'updateStatusKegiatan',
+    'saveSetting', 'setup'
+  ]);
+
   /* ── JSONP TRANSPORT ─────────────────────────────────────── */
-  function request(params, retryCount = 0) {
+  // allowRetry: false untuk write operations agar tidak kirim data 2x
+  function request(params, retryCount = 0, allowRetry) {
+    // Tentukan boleh retry atau tidak berdasarkan action
+    if (allowRetry === undefined) {
+      allowRetry = !WRITE_ACTIONS.has(params.action);
+    }
+
     return new Promise((resolve, reject) => {
       const base = getUrl();
       if (!base) return reject(new Error('URL API GAS belum dikonfigurasi.'));
@@ -53,12 +66,20 @@ const GasAPI = (() => {
 
       const timer = setTimeout(() => {
         cleanup();
-        // Retry sekali jika gagal (untuk mobile yang koneksinya lambat)
-        if (retryCount < 1) {
+        if (allowRetry && retryCount < 1) {
+          // Read operations: retry aman karena tidak mengubah data
           console.warn('[API] Request timeout, mencoba lagi... (attempt ' + (retryCount + 2) + ')');
-          request(params, retryCount + 1).then(resolve).catch(reject);
+          request(params, retryCount + 1, allowRetry).then(resolve).catch(reject);
         } else {
-          reject(new Error('Request timeout (30 detik). Periksa koneksi dan URL GAS.'));
+          // Write operations: JANGAN retry — data mungkin sudah masuk di server
+          // Pesan error khusus untuk write agar user tahu situasinya
+          const isWrite = WRITE_ACTIONS.has(params.action);
+          reject(new Error(
+            isWrite
+              ? 'Koneksi timeout. Data kemungkinan sudah tersimpan — ' +
+                'cek daftar hadir sebelum mencoba kirim lagi.'
+              : 'Request timeout (30 detik). Periksa koneksi dan URL GAS.'
+          ));
         }
       }, TIMEOUT_MS);
 
@@ -96,10 +117,10 @@ const GasAPI = (() => {
       script.src     = url;
       script.onerror = () => {
         cleanup();
-        // Retry sekali jika script gagal dimuat
-        if (retryCount < 1) {
+        if (allowRetry && retryCount < 1) {
+          // Read operations: retry aman
           console.warn('[API] Script error, mencoba lagi... (attempt ' + (retryCount + 2) + ')');
-          request(params, retryCount + 1).then(resolve).catch(reject);
+          request(params, retryCount + 1, allowRetry).then(resolve).catch(reject);
         } else {
           reject(new Error(
             'Script tidak dapat dimuat. Kemungkinan penyebab:\n' +
@@ -173,7 +194,9 @@ const GasAPI = (() => {
   }
 
   async function simpanHadir(data) {
-    // data berisi: { idKegiatan, nama, jabatan, keterangan, ttd }
+    // data berisi: { idKegiatan, nama, jabatan, keterangan, ttd, clientId }
+    // clientId dikirim dari db.js sebagai idempotency key —
+    // GAS menolak request dengan clientId yang sudah pernah diproses.
     return request({ action: 'simpanHadir', ...data });
   }
 

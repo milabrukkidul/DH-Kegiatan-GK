@@ -293,7 +293,8 @@ const DB = (() => {
           nama: nama.trim(), 
           jabatan, 
           keterangan: keterangan || '', 
-          ttd 
+          ttd,
+          clientId: itemId   // Idempotency key — GAS menolak jika ID ini sudah pernah diproses
         });
         
         if (!res.ok) return { ok: false, msg: res.error || 'Gagal menyimpan' };
