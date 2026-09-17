@@ -98,6 +98,9 @@ async function loadPage() {
         await GasAPI.ping();
         console.log('[App] Koneksi API GAS berhasil');
         
+        // Update warna roda loader dengan warna primer saat terkoneksi
+        updateLoaderColor(setting.warna_primer || '#1a73e8');
+        
         // Force refresh data dari server (bypass cache)
         // Ini penting untuk memastikan data selalu fresh
         try {
@@ -404,6 +407,75 @@ function resetForm() {
 function showLoading(show) {
   const el = document.getElementById('loading-overlay');
   el.classList.toggle('hidden', !show);
+}
+
+function updateLoaderColor(primaryColor) {
+  // Update warna roda loader dengan warna primer
+  if (!primaryColor) return;
+  
+  const style = document.createElement('style');
+  style.id = 'loader-theme-style';
+  
+  // Hapus style lama jika ada
+  const oldStyle = document.getElementById('loader-theme-style');
+  if (oldStyle) oldStyle.remove();
+  
+  // Konversi hex ke HSL untuk gradient yang smooth
+  const rgb = hexToRgb(primaryColor);
+  if (!rgb) return;
+  
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  
+  style.textContent = `
+    .wheel {
+      background: radial-gradient(100% 100% at center, 
+        hsla(${hsl.h},${hsl.s}%,${hsl.l}%,0) 47.8%, 
+        hsl(${hsl.h},${hsl.s}%,${Math.max(hsl.l - 20, 20)}%) 48%) !important;
+    }
+    .spoke {
+      background: radial-gradient(100% 100% at center, 
+        hsl(${hsl.h},${hsl.s}%,${hsl.l}%) 4.8%, 
+        hsla(${hsl.h},${hsl.s}%,${hsl.l}%,0) 5%),
+        linear-gradient(hsla(${hsl.h},${hsl.s}%,${Math.max(hsl.l - 10, 15)}%,0) 46.9%, 
+        hsl(${hsl.h},${hsl.s}%,${hsl.l}%) 47% 52.9%, 
+        hsla(${hsl.h},${hsl.s}%,${hsl.l}%,0) 53%) 50% 50% / 99% 99% no-repeat !important;
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  };
 }
 
 function showToast(msg, type = '') {

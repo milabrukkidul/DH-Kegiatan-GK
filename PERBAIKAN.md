@@ -162,10 +162,37 @@ const TIMEOUT_MS = 30000; // 30 detik (up from 15s)
 2. Monitor Google Apps Script execution logs untuk melihat apakah masih ada duplikasi
 3. Periksa quota GAS untuk memastikan tidak ada hit berlebihan
 4. Lakukan testing di berbagai device mobile dengan koneksi yang bervariasi
-5. Jika masih ada masalah, pertimbangkan menambahkan:
+5. Test dark mode di berbagai browser dan perangkat
+6. Jika masih ada masalah, pertimbangkan menambahkan:
    - Server-side deduplication berdasarkan timestamp + nama
    - Rate limiting per user
    - Queue system untuk offline capability
+
+## 🌙 Fitur Baru: Dark Mode / Light Mode
+
+### Deskripsi
+Ditambahkan toggle **mode gelap dan terang** untuk kenyamanan mata pengguna.
+
+### Lokasi
+- **Halaman Tamu**: Icon 🌙/☀️ di header sebelah tombol Admin
+- **Panel Admin**: Icon 🌙/☀️ di header sebelah tombol Lihat Halaman dan Logout
+
+### Fitur
+- ✅ Toggle manual dengan klik icon
+- ✅ Preferensi tersimpan di localStorage
+- ✅ Sinkronisasi antara halaman tamu dan admin
+- ✅ Toast notification saat toggle
+- ✅ Icon berubah sesuai mode aktif
+
+### File yang Ditambahkan/Diubah
+- `index.html` - Tombol dark mode di header
+- `admin.html` - Tombol dark mode di header
+- `css/style.css` - CSS variables & dark theme styles
+- `js/app.js` - Toggle & init dark mode
+- `js/admin.js` - Toggle & init dark mode
+- `FITUR_DARK_MODE.md` - Dokumentasi lengkap dark mode
+
+**Detail lengkap**: Lihat file `FITUR_DARK_MODE.md`
 
 ### Catatan untuk Developer
 

@@ -18,7 +18,24 @@
 
 <!-- ── LOADING ──────────────────────────────────────────── -->
 <div id="loading-overlay">
-  <div class="spinner"></div>
+  <div aria-label="Hamster berlari di roda" role="img" class="wheel-and-hamster">
+    <div class="wheel"></div>
+    <div class="hamster">
+      <div class="hamster__body">
+        <div class="hamster__head">
+          <div class="hamster__ear"></div>
+          <div class="hamster__eye"></div>
+          <div class="hamster__nose"></div>
+        </div>
+        <div class="hamster__limb hamster__limb--fr"></div>
+        <div class="hamster__limb hamster__limb--fl"></div>
+        <div class="hamster__limb hamster__limb--br"></div>
+        <div class="hamster__limb hamster__limb--bl"></div>
+        <div class="hamster__tail"></div>
+      </div>
+    </div>
+    <div class="spoke"></div>
+  </div>
   <p>Memuat panel admin…</p>
 </div>
 
@@ -143,6 +160,14 @@
       <div class="header-sub">Manajemen Daftar Hadir</div>
     </div>
     <div style="display:flex;gap:4px;">
+      <button id="btn-dark-mode" class="header-btn" title="Toggle mode gelap" aria-label="Toggle mode gelap/terang">
+        <svg id="icon-light" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+          <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>
+        </svg>
+        <svg id="icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 2c-1.05 0-2.05.16-3 .46 4.06 1.27 7 5.06 7 9.54 0 4.48-2.94 8.27-7 9.54.95.3 1.95.46 3 .46 5.52 0 10-4.48 10-10S14.52 2 9 2z"/>
+        </svg>
+      </button>
       <a href="index.html" class="header-btn" title="Lihat halaman tamu" aria-label="Halaman tamu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11

@@ -63,6 +63,9 @@ function bindStaticEvents() {
   // Logout
   document.getElementById('btn-logout').addEventListener('click', doLogout);
 
+  // Dark mode
+  document.getElementById('btn-dark-mode').addEventListener('click', toggleDarkMode);
+
   // GAS URL
   document.getElementById('btn-save-url').addEventListener('click', saveGasUrl);
   document.getElementById('btn-test-url').addEventListener('click', testGasUrl);
@@ -835,3 +838,37 @@ function esc(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+/* ── DARK MODE ───────────────────────────────────────────── */
+function toggleDarkMode() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyThemeMode(newTheme);
+  localStorage.setItem('dh_theme', newTheme);
+  
+  const msg = newTheme === 'dark' ? '🌙 Mode gelap diaktifkan' : '☀️ Mode terang diaktifkan';
+  showToast(msg, 'success');
+}
+
+function applyThemeMode(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  
+  const iconLight = document.getElementById('icon-light');
+  const iconDark = document.getElementById('icon-dark');
+  
+  if (theme === 'dark') {
+    // Dark mode aktif, tampilkan icon matahari (untuk switch ke light)
+    if (iconLight) iconLight.style.display = '';
+    if (iconDark) iconDark.style.display = 'none';
+  } else {
+    // Light mode aktif, tampilkan icon bulan (untuk switch ke dark)
+    if (iconLight) iconLight.style.display = 'none';
+    if (iconDark) iconDark.style.display = '';
+  }
+}
+
+// Inisialisasi dark mode dari localStorage saat halaman load
+(function initDarkMode() {
+  const theme = localStorage.getItem('dh_theme') || 'light';
+  applyThemeMode(theme);
+})();
