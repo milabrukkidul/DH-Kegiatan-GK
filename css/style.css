@@ -31,6 +31,69 @@
   --transition:       .2s ease;
 }
 
+/* ── DARK MODE ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --clr-bg:           #1a1a1a;
+  --clr-surface:      #2d2d2d;
+  --clr-text:         #e8eaed;
+  --clr-muted:        #9aa0a6;
+  --clr-border:       #3c4043;
+  --shadow-sm:        0 1px 4px rgba(0,0,0,.30);
+  --shadow-md:        0 2px 12px rgba(0,0,0,.40);
+  --shadow-lg:        0 6px 28px rgba(0,0,0,.50);
+}
+
+[data-theme="dark"] .sig-wrap {
+  background: #242424;
+  border-color: #444;
+}
+
+[data-theme="dark"] .sig-wrap.active {
+  border-color: var(--clr-primary);
+}
+
+[data-theme="dark"] .form-control {
+  background: #242424;
+  border-color: #444;
+  color: var(--clr-text);
+}
+
+[data-theme="dark"] .form-control:focus {
+  background: #2d2d2d;
+  border-color: var(--clr-primary);
+}
+
+[data-theme="dark"] .select-wrap::after {
+  filter: invert(1);
+}
+
+[data-theme="dark"] .no-data {
+  color: var(--clr-muted);
+}
+
+[data-theme="dark"] .kg-badge {
+  background: rgba(52, 168, 83, 0.15);
+  color: #81c995;
+}
+
+[data-theme="dark"] .kg-badge.inactive {
+  background: rgba(95, 99, 104, 0.15);
+  color: #9aa0a6;
+}
+
+[data-theme="dark"] .success-detail {
+  background: #242424;
+}
+
+[data-theme="dark"] .hadir-item {
+  border-bottom-color: #3c4043;
+}
+
+[data-theme="dark"] .avatar {
+  background: #3c4043;
+  color: #e8eaed;
+}
+
 /* ── BASE ──────────────────────────────────────────────────── */
 html { font-size: 16px; scroll-behavior: smooth; }
 body {
@@ -275,7 +338,10 @@ textarea.form-control { resize: vertical; min-height: 76px; }
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--clr-muted); transition: background var(--transition);
 }
-.btn-icon:hover { background: var(--clr-bg); }
+.btn-icon:hover:not(:disabled) { background: rgba(255,255,255,0.15); }
+.btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
+.card-head .btn-icon { color: rgba(255,255,255,0.9); }
+.card-head .btn-icon:hover:not(:disabled) { background: rgba(255,255,255,0.2); }
 
 /* ── SUCCESS CARD ──────────────────────────────────────────── */
 .success-card { border: 2px solid var(--clr-green); }

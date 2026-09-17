@@ -53,6 +53,33 @@
 - Pesan error yang lebih informatif untuk troubleshooting
 - Console warning untuk tracking masalah koneksi
 
+### 4. **Masalah Cache Browser (Update Terbaru)**
+
+**Masalah:**
+- Terhubung ke spreadsheet (badge hijau), tapi tidak ada kegiatan aktif
+- Saat mode samaran (incognito) data terbaca normal karena cache kosong
+- Browser menyimpan cache lama yang tidak sinkron dengan server
+
+**Solusi:**
+- ✅ **Force refresh** data dari server saat load halaman (bypass cache)
+- ✅ **Tombol refresh manual** di card kegiatan untuk update data
+- ✅ Update cache otomatis saat getKegiatanAktif() dipanggil
+- ✅ Console logging lengkap untuk debug masalah cache
+- ✅ Keyboard shortcut **Ctrl+Shift+R** untuk clear cache dan reload
+- ✅ Lebih banyak console.log untuk tracking alur data
+
+**File yang diubah:**
+- `js/app.js` - refreshKegiatan(), force refresh di loadPage(), keyboard shortcut
+- `js/db.js` - Update cache di getKegiatanAktif(), tambah console.log
+- `index.html` - Tombol refresh di card kegiatan
+
+**Cara mengatasi jika masih bermasalah:**
+1. **Klik tombol refresh** (icon reload) di card "Kegiatan Aktif"
+2. **Hard refresh browser**: Ctrl+Shift+R (Windows) atau Cmd+Shift+R (Mac)
+3. **Buka Developer Tools** (F12) → Console → lihat log untuk debug
+4. **Clear semua cache**: Ctrl+Shift+R shortcut internal app → confirm
+5. **Mode samaran**: Coba buka di incognito/private mode untuk verifikasi
+
 ### Cara Testing
 
 #### Test Double Submit Prevention:
@@ -72,6 +99,39 @@
 2. Refresh halaman
 3. **Expected**: Badge merah muncul dengan label "URL API Tidak Valid"
 4. Klik badge untuk melihat pesan error
+
+#### Test Cache Problem:
+1. Buka browser normal dengan cache lama
+2. Klik tombol refresh (icon reload) di card "Kegiatan Aktif"
+3. **Expected**: Data diperbarui dari server, console log menunjukkan refresh berhasil
+4. Bandingkan dengan mode samaran - harus sama
+
+### Troubleshooting Guide
+
+#### Gejala: "Belum ada kegiatan aktif" padahal admin sudah mengaktifkan
+
+**Diagnosis:**
+1. Buka Developer Tools (F12) → Console
+2. Cari log: `[DB] getKegiatanAktif dari GAS:`
+3. Jika ada data di log tapi UI kosong → masalah rendering
+4. Jika log menunjukkan `null` atau array kosong → masalah di server/cache
+
+**Solusi bertahap:**
+1. **Level 1 - Refresh UI**: Klik tombol refresh di card kegiatan
+2. **Level 2 - Hard refresh**: Tekan Ctrl+Shift+R (Windows) atau Cmd+Shift+R (Mac)
+3. **Level 3 - Clear cache app**: Tekan Ctrl+Shift+R lalu confirm dialog
+4. **Level 4 - Clear browser cache**: Settings browser → Clear browsing data → Cached images and files
+5. **Level 5 - Verifikasi server**: Buka mode samaran, jika masih kosong → cek Google Sheets
+
+**Cek di Google Sheets:**
+- Pastikan ada data di sheet "Kegiatan"
+- Pastikan kolom "Status" berisi "Aktif" (case sensitive)
+- Pastikan GAS deployment sudah diupdate jika ada perubahan code
+
+**Cek URL API:**
+- Badge hijau = URL valid
+- Badge merah = URL tidak valid atau salah format
+- Badge kuning = Mode lokal (tidak terhubung ke server)
 
 ### Technical Details
 

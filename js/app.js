@@ -16,9 +16,68 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-clear-sig').addEventListener('click', () => SignaturePad.clear());
   document.getElementById('hadir-form').addEventListener('submit', onSubmit);
   document.getElementById('btn-hadir-lagi').addEventListener('click', resetForm);
+  document.getElementById('btn-refresh-kegiatan').addEventListener('click', refreshKegiatan);
+  document.getElementById('btn-dark-mode').addEventListener('click', toggleDarkMode);
+
+  // Inisialisasi dark mode dari localStorage
+  initDarkMode();
+
+  // Debug: Clear cache dengan Ctrl+Shift+R atau Cmd+Shift+R
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
+      e.preventDefault();
+      if (confirm('Hapus semua cache lokal dan reload halaman?')) {
+        localStorage.removeItem('dh_kegiatan');
+        localStorage.removeItem('dh_hadir');
+        console.log('[Debug] Cache cleared');
+        showToast('Cache dihapus, reload halaman...', 'success');
+        setTimeout(() => location.reload(), 800);
+      }
+    }
+  });
 
   await loadPage();
 });
+
+/* ── REFRESH KEGIATAN ────────────────────────────────────── */
+async function refreshKegiatan() {
+  const btn = document.getElementById('btn-refresh-kegiatan');
+  if (!btn) return;
+  
+  // Animasi rotasi
+  btn.style.animation = 'spin 0.6s linear';
+  btn.disabled = true;
+  
+  try {
+    if (DB.isGasMode()) {
+      // Clear cache dan ambil data fresh dari server
+      localStorage.removeItem('dh_kegiatan');
+      
+      const freshKegiatan = await GasAPI.getAllKegiatan();
+      localStorage.setItem('dh_kegiatan', JSON.stringify(freshKegiatan));
+      console.log('[Refresh] Data kegiatan diperbarui:', freshKegiatan.length, 'kegiatan');
+      
+      currentKegiatan = await DB.getKegiatanAktif();
+      console.log('[Refresh] Kegiatan aktif:', currentKegiatan);
+      renderKegiatan(currentKegiatan);
+      
+      if (currentKegiatan) {
+        const hadir = await DB.getHadirByKegiatan(currentKegiatan.id);
+        renderDaftarHadir(hadir);
+      }
+      
+      showToast('✓ Data kegiatan berhasil diperbarui', 'success');
+    } else {
+      showToast('Mode lokal - tidak ada data server untuk diperbarui', 'warn');
+    }
+  } catch (err) {
+    console.error('[Refresh] Error:', err);
+    showToast('Gagal memperbarui data: ' + err.message, 'error');
+  } finally {
+    btn.style.animation = '';
+    btn.disabled = false;
+  }
+}
 
 /* ── LOAD PAGE ───────────────────────────────────────────── */
 async function loadPage() {
@@ -38,6 +97,17 @@ async function loadPage() {
       try {
         await GasAPI.ping();
         console.log('[App] Koneksi API GAS berhasil');
+        
+        // Force refresh data dari server (bypass cache)
+        // Ini penting untuk memastikan data selalu fresh
+        try {
+          const freshKegiatan = await GasAPI.getAllKegiatan();
+          console.log('[App] Data kegiatan diperbarui dari server:', freshKegiatan.length, 'kegiatan');
+          // Update localStorage cache dengan data fresh
+          localStorage.setItem('dh_kegiatan', JSON.stringify(freshKegiatan));
+        } catch (err) {
+          console.warn('[App] Gagal refresh data kegiatan:', err.message);
+        }
       } catch (e) {
         console.warn('[App] Koneksi API GAS gagal:', e.message);
         showToast('⚠️ Koneksi ke server lambat atau bermasalah. Data mungkin tidak tersinkron.', 'warning');
@@ -48,6 +118,7 @@ async function loadPage() {
     renderModeBadge();
 
     currentKegiatan = await DB.getKegiatanAktif();
+    console.log('[App] Kegiatan aktif:', currentKegiatan);
     renderKegiatan(currentKegiatan);
 
     if (currentKegiatan) {
@@ -355,4 +426,37 @@ function esc(str) {
   return String(str || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ── DARK MODE ───────────────────────────────────────────── */
+function initDarkMode() {
+  const theme = localStorage.getItem('dh_theme') || 'light';
+  applyThemeMode(theme);
+}
+
+function toggleDarkMode() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyThemeMode(newTheme);
+  localStorage.setItem('dh_theme', newTheme);
+  
+  const msg = newTheme === 'dark' ? '🌙 Mode gelap diaktifkan' : '☀️ Mode terang diaktifkan';
+  showToast(msg, 'success');
+}
+
+function applyThemeMode(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  
+  const iconLight = document.getElementById('icon-light');
+  const iconDark = document.getElementById('icon-dark');
+  
+  if (theme === 'dark') {
+    // Dark mode aktif, tampilkan icon matahari (untuk switch ke light)
+    if (iconLight) iconLight.style.display = '';
+    if (iconDark) iconDark.style.display = 'none';
+  } else {
+    // Light mode aktif, tampilkan icon bulan (untuk switch ke dark)
+    if (iconLight) iconLight.style.display = 'none';
+    if (iconDark) iconDark.style.display = '';
+  }
 }

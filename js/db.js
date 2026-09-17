@@ -121,11 +121,14 @@ const DB = (() => {
     if (isGasMode()) {
       try {
         const data = await GasAPI.getAllKegiatan();
+        console.log('[DB] getAllKegiatan dari GAS:', data.length, 'kegiatan', data);
         lSave(K_KEGIATAN, data); // cache
         return data;
       } catch (e) {
         console.warn('[DB] GAS getAllKegiatan gagal, pakai cache:', e.message);
-        return _localGetKegiatan();
+        const cached = _localGetKegiatan();
+        console.log('[DB] Cache lokal:', cached.length, 'kegiatan', cached);
+        return cached;
       }
     }
     return _localGetKegiatan();
@@ -139,10 +142,28 @@ const DB = (() => {
     if (isGasMode()) {
       try {
         const data = await GasAPI.getKegiatanAktif();
+        console.log('[DB] getKegiatanAktif dari GAS:', data);
+        // Update cache dengan data terbaru dari server
+        if (data) {
+          // Cari di cache lokal, update jika ada, atau tambahkan
+          const cached = lLoad(K_KEGIATAN, []);
+          const idx = cached.findIndex(k => k.id === data.id);
+          if (idx !== -1) {
+            cached[idx] = data;
+          } else {
+            cached.unshift(data); // Tambah di awal jika belum ada
+          }
+          lSave(K_KEGIATAN, cached);
+          console.log('[DB] Cache diupdate dengan kegiatan aktif');
+        } else {
+          console.warn('[DB] Tidak ada kegiatan aktif dari server');
+        }
         return data;
       } catch (e) {
         console.warn('[DB] GAS getKegiatanAktif gagal, pakai cache:', e.message);
-        return _localGetAktif();
+        const cached = _localGetAktif();
+        console.log('[DB] Kegiatan aktif dari cache:', cached);
+        return cached;
       }
     }
     return _localGetAktif();
