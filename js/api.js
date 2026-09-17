@@ -26,7 +26,7 @@ const GasAPI = (() => {
 
   // URL default — langsung aktif bahkan di mode samaran / cache bersih.
   // Nilai ini dipakai jika localStorage belum pernah diisi.
-  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxPpDKZOHb8W_Cs_hOfa2458P8ej_XDwPmWnMcuxOUd33kBsX7d0UfoKG1h-n8ppPXLDw/exec';
+  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyXd2newAaVueZlLeLEicQFOSBxiKQoR0mpfcV0Etv5F7yRjBSCHbHKEe0hssxQ7IFtng/exec';
 
   /* ── CONFIG ──────────────────────────────────────────────── */
   function getUrl() {
