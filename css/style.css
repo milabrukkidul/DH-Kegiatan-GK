@@ -235,7 +235,12 @@ textarea.form-control { resize: vertical; min-height: 76px; }
   transition: background var(--transition), box-shadow var(--transition), transform .1s;
 }
 .btn:active { transform: scale(.97); }
-.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; pointer-events: none; }
+.btn[data-submitting="true"] { 
+  opacity: .65; 
+  cursor: wait; 
+  pointer-events: none;
+}
 
 .btn-primary {
   background: var(--clr-primary); color: #fff;

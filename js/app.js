@@ -33,6 +33,17 @@ async function loadPage() {
       setting.nama_sekolah || 'Daftar Hadir Digital';
     document.title = (setting.nama_sekolah || 'Daftar Hadir') + ' — Daftar Hadir';
 
+    // Cek koneksi API di mode GAS
+    if (DB.isGasMode()) {
+      try {
+        await GasAPI.ping();
+        console.log('[App] Koneksi API GAS berhasil');
+      } catch (e) {
+        console.warn('[App] Koneksi API GAS gagal:', e.message);
+        showToast('⚠️ Koneksi ke server lambat atau bermasalah. Data mungkin tidak tersinkron.', 'warning');
+      }
+    }
+
     // Tampilkan badge mode
     renderModeBadge();
 
@@ -60,15 +71,35 @@ function renderModeBadge() {
   badge.id    = 'mode-badge';
 
   if (DB.isGasMode()) {
-    badge.style.cssText =
-      'position:fixed;bottom:60px;right:14px;z-index:300;' +
-      'background:#34a853;color:#fff;font-size:11px;font-weight:700;' +
-      'padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);' +
-      'display:flex;align-items:center;gap:5px;';
-    badge.innerHTML =
-      '<svg width="10" height="10" viewBox="0 0 24 24" fill="white">' +
-      '<path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5C3.89 3 3 3.9 3 5L2.99 19A2 2 0 0 0 5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1h-2z"/>' +
-      '</svg> Terhubung ke Spreadsheet';
+    const apiUrl = GasAPI.getUrl();
+    const isValidUrl = apiUrl && apiUrl.startsWith('https://script.google.com/macros/');
+    
+    if (isValidUrl) {
+      badge.style.cssText =
+        'position:fixed;bottom:60px;right:14px;z-index:300;' +
+        'background:#34a853;color:#fff;font-size:11px;font-weight:700;' +
+        'padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);' +
+        'display:flex;align-items:center;gap:5px;';
+      badge.innerHTML =
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="white">' +
+        '<path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5C3.89 3 3 3.9 3 5L2.99 19A2 2 0 0 0 5 21h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1h-2z"/>' +
+        '</svg> Terhubung ke Spreadsheet';
+    } else {
+      // URL GAS tidak valid atau kosong
+      badge.style.cssText =
+        'position:fixed;bottom:60px;right:14px;z-index:300;' +
+        'background:#d93025;color:#fff;font-size:11px;font-weight:700;' +
+        'padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);' +
+        'display:flex;align-items:center;gap:5px;cursor:pointer;';
+      badge.innerHTML =
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="white">' +
+        '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>' +
+        '</svg> URL API Tidak Valid';
+      badge.title = 'Klik untuk info lebih lanjut';
+      badge.addEventListener('click', () => {
+        showToast('URL API tidak valid. Periksa pengaturan di panel Admin.', 'error');
+      });
+    }
   } else {
     badge.style.cssText =
       'position:fixed;bottom:60px;right:14px;z-index:300;' +
@@ -191,8 +222,18 @@ function renderDaftarHadir(list) {
 }
 
 /* ── SUBMIT ──────────────────────────────────────────────── */
+let isSubmitting = false; // Flag untuk mencegah double submit
+
 async function onSubmit(e) {
   e.preventDefault();
+
+  const btn = document.getElementById('btn-submit');
+  
+  // Cegah double submit - cek dari 2 sumber
+  if (isSubmitting || btn.dataset.submitting === 'true') {
+    console.log('[Submit] Masih dalam proses, abaikan klik duplikat');
+    return;
+  }
 
   const nama       = document.getElementById('input-nama').value.trim();
   const jabatan    = document.getElementById('input-jabatan').value;
@@ -208,9 +249,15 @@ async function onSubmit(e) {
     showToast('Kegiatan sudah Nonaktif — pengisian ditutup.', 'error');
     return;
   }
-
-  const btn = document.getElementById('btn-submit');
+  
+  // Set flag dan disable button
+  isSubmitting = true;
+  btn.dataset.submitting = 'true';
   setButtonLoading(btn, true, 'Menyimpan…');
+  
+  // Disable form juga untuk keamanan ekstra
+  const formElements = document.getElementById('hadir-form').elements;
+  Array.from(formElements).forEach(el => { el.disabled = true; });
 
   try {
     const result = await DB.simpanHadir({
@@ -220,6 +267,10 @@ async function onSubmit(e) {
 
     if (!result.ok) {
       showToast(result.msg, 'error');
+      // Re-enable form jika error
+      if (currentKegiatan.status === 'Aktif') {
+        Array.from(formElements).forEach(el => { el.disabled = false; });
+      }
       return;
     }
 
@@ -240,7 +291,14 @@ async function onSubmit(e) {
     renderDaftarHadir(hadir);
   } catch (err) {
     showToast('Gagal menyimpan: ' + err.message, 'error');
+    // Re-enable form jika error
+    if (currentKegiatan.status === 'Aktif') {
+      Array.from(formElements).forEach(el => { el.disabled = false; });
+    }
   } finally {
+    // Reset flag dan button
+    isSubmitting = false;
+    btn.dataset.submitting = 'false';
     setButtonLoading(btn, false,
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="white">' +
       '<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>' +
@@ -251,8 +309,21 @@ async function onSubmit(e) {
 
 /* ── RESET ───────────────────────────────────────────────── */
 function resetForm() {
-  document.getElementById('hadir-form').reset();
+  // Reset form dan flag
+  isSubmitting = false;
+  const formEl = document.getElementById('hadir-form');
+  const btn = document.getElementById('btn-submit');
+  
+  formEl.reset();
   SignaturePad.clear();
+  
+  if (btn) btn.dataset.submitting = 'false';
+  
+  // Re-enable semua form elements jika kegiatan masih aktif
+  if (currentKegiatan && currentKegiatan.status === 'Aktif') {
+    Array.from(formEl.elements).forEach(el => { el.disabled = false; });
+  }
+  
   document.getElementById('success-card').style.display = 'none';
   document.getElementById('form-card').style.display    = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });

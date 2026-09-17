@@ -260,28 +260,53 @@ const DB = (() => {
     if (!jabatan)               return { ok: false, msg: 'Jabatan harus dipilih.' };
     if (!ttd)                   return { ok: false, msg: 'Tanda tangan wajib diisi.' };
 
+    // Generate ID dan timestamp SEBELUM request
+    const itemId = uid();
+    const timestamp = nowStr();
+    const ts = Date.now();
+
     if (isGasMode()) {
-      const res = await GasAPI.simpanHadir({ idKegiatan, nama: nama.trim(), jabatan, keterangan: keterangan || '', ttd });
-      if (!res.ok) return { ok: false, msg: res.error || 'Gagal menyimpan' };
-      const all  = lLoad(K_HADIR, []);
-      const item = {
-        id: res.id || uid(), idKegiatan,
-        nama: nama.trim(), jabatan, keterangan: keterangan || '', ttd,
-        waktuAbsen: nowStr(), ts: Date.now()
-      };
-      all.push(item);
-      lSave(K_HADIR, all);
-      return { ok: true, data: item };
+      try {
+        const res = await GasAPI.simpanHadir({ 
+          idKegiatan, 
+          nama: nama.trim(), 
+          jabatan, 
+          keterangan: keterangan || '', 
+          ttd 
+        });
+        
+        if (!res.ok) return { ok: false, msg: res.error || 'Gagal menyimpan' };
+        
+        // Simpan ke cache lokal setelah berhasil di server
+        const all  = lLoad(K_HADIR, []);
+        const item = {
+          id: res.id || itemId, 
+          idKegiatan,
+          nama: nama.trim(), 
+          jabatan, 
+          keterangan: keterangan || '', 
+          ttd,
+          waktuAbsen: timestamp, 
+          ts: ts
+        };
+        all.push(item);
+        lSave(K_HADIR, all);
+        return { ok: true, data: item };
+      } catch (err) {
+        // Jika error network, jangan simpan duplikat
+        console.error('[DB] Gagal simpan ke GAS:', err);
+        return { ok: false, msg: 'Gagal menghubungi server: ' + err.message };
+      }
     }
 
-    // Local
+    // Local mode
     const kgList = lLoad(K_KEGIATAN, []);
     const kg     = kgList.find(k => k.id === idKegiatan);
     if (!kg) return { ok: false, msg: 'Kegiatan tidak ditemukan.' };
 
     const all  = lLoad(K_HADIR, []);
     const item = {
-      id:              uid(),
+      id:              itemId,
       idKegiatan,
       judulKegiatan:   kg.judul,
       tanggalKegiatan: kg.tanggal,
@@ -289,8 +314,8 @@ const DB = (() => {
       jabatan,
       keterangan:      keterangan || '',
       ttd,
-      waktuAbsen:      nowStr(),
-      ts:              Date.now()
+      waktuAbsen:      timestamp,
+      ts:              ts
     };
     all.push(item);
     lSave(K_HADIR, all);

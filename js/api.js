@@ -21,7 +21,7 @@
 const GasAPI = (() => {
 
   const CFG_KEY    = 'dh_gas_url';
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 30000; // Naik dari 15s ke 30s untuk koneksi mobile yang lambat
   let   _cbCounter = 0;
 
   // URL default — langsung aktif bahkan di mode samaran / cache bersih.
@@ -44,7 +44,7 @@ const GasAPI = (() => {
   }
 
   /* ── JSONP TRANSPORT ─────────────────────────────────────── */
-  function request(params) {
+  function request(params, retryCount = 0) {
     return new Promise((resolve, reject) => {
       const base = getUrl();
       if (!base) return reject(new Error('URL API GAS belum dikonfigurasi.'));
@@ -53,7 +53,13 @@ const GasAPI = (() => {
 
       const timer = setTimeout(() => {
         cleanup();
-        reject(new Error('Request timeout (15 detik). Periksa koneksi dan URL GAS.'));
+        // Retry sekali jika gagal (untuk mobile yang koneksinya lambat)
+        if (retryCount < 1) {
+          console.warn('[API] Request timeout, mencoba lagi... (attempt ' + (retryCount + 2) + ')');
+          request(params, retryCount + 1).then(resolve).catch(reject);
+        } else {
+          reject(new Error('Request timeout (30 detik). Periksa koneksi dan URL GAS.'));
+        }
       }, TIMEOUT_MS);
 
       window[cbName] = (data) => {
@@ -90,12 +96,19 @@ const GasAPI = (() => {
       script.src     = url;
       script.onerror = () => {
         cleanup();
-        reject(new Error(
-          'Script tidak dapat dimuat. Kemungkinan penyebab:\n' +
-          '• URL GAS salah atau belum di-deploy\n' +
-          '• Deployment belum diset "Anyone" aksesnya\n' +
-          '• Koneksi internet bermasalah'
-        ));
+        // Retry sekali jika script gagal dimuat
+        if (retryCount < 1) {
+          console.warn('[API] Script error, mencoba lagi... (attempt ' + (retryCount + 2) + ')');
+          request(params, retryCount + 1).then(resolve).catch(reject);
+        } else {
+          reject(new Error(
+            'Script tidak dapat dimuat. Kemungkinan penyebab:\n' +
+            '• URL GAS salah atau belum di-deploy\n' +
+            '• Deployment belum diset "Anyone" aksesnya\n' +
+            '• Koneksi internet bermasalah\n' +
+            '• Periksa apakah URL dimulai dengan https://'
+          ));
+        }
       };
       document.head.appendChild(script);
     });
